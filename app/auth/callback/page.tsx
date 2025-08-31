@@ -1,35 +1,36 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { supabaseBrowser } from '@/lib/supabase/client';
 
+export const dynamic = 'force-dynamic'; // don't pre-render this route
+
 export default function AuthCallback() {
+  return (
+    <Suspense fallback={<main className="p-6">Finishing sign in…</main>}>
+      <CallbackInner />
+    </Suspense>
+  );
+}
+
+function CallbackInner() {
   const sp = useSearchParams();
   const router = useRouter();
-  const [msg, setMsg] = useState('Completing sign-in…');
+  const supabase = supabaseBrowser;
 
   useEffect(() => {
     const code = sp.get('code');
     if (!code) {
-      setMsg('Missing code');
+      router.replace('/auth?error=missing_code');
       return;
     }
-    const run = async () => {
-      const supabase = supabaseBrowser; // NOTE: no ()
-      const { error } = await supabase.auth.exchangeCodeForSession(code);
-      if (error) {
-        setMsg(`Sign-in failed: ${error.message}`);
-        return;
-      }
-      router.replace('/');
-    };
-    run();
-  }, [sp, router]);
 
-  return (
-    <main className="p-6">
-      <p>{msg}</p>
-    </main>
-  );
+    (async () => {
+      const { error } = await supabase.auth.exchangeCodeForSession(code);
+      router.replace(error ? '/auth?error=signin_failed' : '/');
+    })();
+  }, [sp, router, supabase]);
+
+  return <main className="p-6">Finishing sign in…</main>;
 }
