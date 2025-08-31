@@ -7,35 +7,28 @@ import { supabaseBrowser } from '@/lib/supabase/client';
 export default function AuthCallback() {
   const sp = useSearchParams();
   const router = useRouter();
-  const [msg, setMsg] = useState('Finishing sign-in...');
+  const [msg, setMsg] = useState('Completing sign-in…');
 
   useEffect(() => {
     const code = sp.get('code');
-    const next = sp.get('next') ?? '/';
-
     if (!code) {
-      setMsg('No code found. Redirecting...');
-      router.replace('/auth');
+      setMsg('Missing code');
       return;
     }
-
     const run = async () => {
-      const supabase = supabaseBrowser();
+      const supabase = supabaseBrowser; // NOTE: no ()
       const { error } = await supabase.auth.exchangeCodeForSession(code);
       if (error) {
         setMsg(`Sign-in failed: ${error.message}`);
-        setTimeout(() => router.replace('/auth'), 1500);
         return;
       }
-      router.replace(next);
+      router.replace('/');
     };
-
     run();
   }, [sp, router]);
 
   return (
     <main className="p-6">
-      <h1>Auth Callback</h1>
       <p>{msg}</p>
     </main>
   );
