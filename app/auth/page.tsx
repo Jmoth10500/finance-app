@@ -12,8 +12,7 @@ function AuthInner() {
 
   const signInWithGoogle = useCallback(async () => {
     const origin = window.location.origin;
-    const supabase = supabaseBrowser();              // <-- call it
-    await supabase.auth.signInWithOAuth({
+    await supabaseBrowser.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: `${origin}/auth/callback` },
     });
