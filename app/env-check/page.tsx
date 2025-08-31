@@ -6,9 +6,10 @@ function mask(v?: string) {
 }
 export default function EnvCheck() {
   return (
-    <main className="p-6">
+    <main className="p-6 space-y-2">
       <pre>NEXT_PUBLIC_SUPABASE_URL: {process.env.NEXT_PUBLIC_SUPABASE_URL}</pre>
       <pre>NEXT_PUBLIC_SUPABASE_ANON_KEY: {mask(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)}</pre>
+      <pre>NEXT_PUBLIC_CURRENCY: {process.env.NEXT_PUBLIC_CURRENCY}</pre>
     </main>
   );
 }
