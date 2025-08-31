@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { supabaseBrowser } from '@/lib/supabase/client';
 
+export const dynamic = 'force-dynamic';
+
 type User = { email?: string | null };
 
 export default function Home() {
@@ -10,14 +12,16 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabaseBrowser.auth.getUser().then(({ data }) => {
+    const supabase = supabaseBrowser();             // <-- call it
+    supabase.auth.getUser().then(({ data }) => {
       setUser(data.user ?? null);
       setLoading(false);
     });
   }, []);
 
   const signOut = async () => {
-    await supabaseBrowser.auth.signOut();
+    const supabase = supabaseBrowser();             // <-- call it
+    await supabase.auth.signOut();
     setUser(null);
   };
 
