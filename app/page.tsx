@@ -6,6 +6,14 @@ import StatCard from '@/components/StatCard';
 
 type Tx = { amount: number; date?: string | null };
 
+// ---- Currency helpers ----
+// Uses env var, falls back to USD if not set at build time.
+const CURRENCY = process.env.NEXT_PUBLIC_CURRENCY ?? 'USD';
+const nice = (n: number | null) =>
+  n == null
+    ? '—'
+    : new Intl.NumberFormat(undefined, { style: 'currency', currency: CURRENCY }).format(n);
+
 export default function Dashboard() {
   const [email, setEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -27,11 +35,7 @@ export default function Dashboard() {
         const { data: userData } = await supabase.auth.getUser();
         const user = userData?.user ?? null;
         setEmail(user?.email ?? null);
-
-        if (!user) {
-          setLoading(false);
-          return;
-        }
+        if (!user) { setLoading(false); return; }
 
         // All-time stats
         const { data: allTx, error: allErr } = await supabase
@@ -55,7 +59,6 @@ export default function Dashboard() {
           .gte('date', isoFirst);
 
         if (mErr) {
-          // If "date" column doesn't exist, just compute by all-time
           setIncomeMTD(null);
           setExpenseMTD(null);
         } else {
@@ -91,14 +94,13 @@ export default function Dashboard() {
     );
   }
 
-  const nice = (n: number | null) =>
-    n == null ? '—' : n.toLocaleString(undefined, { style: 'currency', currency: 'USD' });
-
   return (
     <main className="p-6 space-y-6">
       <header>
         <h1 className="text-xl font-semibold">Dashboard</h1>
         <p className="text-sm text-gray-600">Signed in as <strong>{email}</strong></p>
+        {/* Debug line so we can see what the bundle uses; remove later */}
+        <p className="text-xs text-gray-500">Currency in code: <code>{CURRENCY}</code></p>
       </header>
 
       {error ? (
@@ -107,8 +109,8 @@ export default function Dashboard() {
           <p className="text-sm mt-1">{error}</p>
           <ol className="list-decimal ml-5 mt-3 text-sm">
             <li>Open your Supabase project → SQL Editor.</li>
-            <li>Paste and run <code>migration.sql</code> from the repo to create tables.</li>
-            <li>(Optional) Add some rows to <code>transactions</code> with an <code>amount</code> column. Positive = income, negative = expense.</li>
+            <li>Run the migration to create tables if needed.</li>
+            <li>(Optional) Add some rows to <code>transactions</code> (positive = income, negative = expense).</li>
             <li>Refresh this page.</li>
           </ol>
         </div>
