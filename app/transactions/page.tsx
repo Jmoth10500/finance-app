@@ -2,7 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { supabaseBrowser } from '@/lib/supabase/client';
-import { nice } from '@/components/Currency';
+
+// ---- Currency helpers (uses NEXT_PUBLIC_CURRENCY, defaults to USD) ----
+const CURRENCY = process.env.NEXT_PUBLIC_CURRENCY ?? 'USD';
+const nice = (n: number | null) =>
+  n == null
+    ? '—'
+    : new Intl.NumberFormat(undefined, { style: 'currency', currency: CURRENCY }).format(n);
 
 type Category = { id: string; name: string };
 type Tx = {
@@ -10,8 +16,7 @@ type Tx = {
   date: string;
   amount: number;
   note: string | null;
-  // single related category object for rendering (or null)
-  category: { name: string } | null;
+  category: { name: string } | null; // single related category for display
 };
 
 export const dynamic = 'force-dynamic';
@@ -24,7 +29,6 @@ export default function TransactionsPage() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
 
-  // form state
   const today = new Date().toISOString().slice(0, 10);
   const [date, setDate] = useState(today);
   const [amount, setAmount] = useState('');
@@ -35,20 +39,19 @@ export default function TransactionsPage() {
     setErr(null);
     setLoading(true);
 
-    const [{ data: rawTx, error: txErr }, { data: catData, error: catErr }] =
-      await Promise.all([
-        // IMPORTANT: alias relation to a singular name
-        supabase
-          .from('transactions')
-          .select('id,date,amount,note,category:categories(name)')
-          .order('date', { ascending: false })
-          .limit(200),
-        supabase.from('categories').select('id,name').order('name'),
-      ]);
+    const [{ data: rawTx, error: txErr }, { data: catData, error: catErr }] = await Promise.all([
+      // Alias the relation to a single object named "category"
+      supabase
+        .from('transactions')
+        .select('id,date,amount,note,category:categories(name)')
+        .order('date', { ascending: false })
+        .limit(200),
+      supabase.from('categories').select('id,name').order('name'),
+    ]);
 
     if (txErr) setErr(txErr.message);
 
-    // Normalise relation (works whether API returns object or array)
+    // Normalise relation shape (handles object or array)
     const normalised: Tx[] = (rawTx ?? []).map((r: any) => {
       let cat = r.category ?? r.categories ?? null;
       if (Array.isArray(cat)) cat = cat[0] ?? null;
@@ -75,14 +78,12 @@ export default function TransactionsPage() {
       setErr('Amount must be a number (positive = income, negative = expense).');
       return;
     }
-    const { error } = await supabase
-      .from('transactions')
-      .insert({
-        date,
-        amount: val,
-        note: note || null,
-        category_id: categoryId || null,
-      });
+    const { error } = await supabase.from('transactions').insert({
+      date,
+      amount: val,
+      note: note || null,
+      category_id: categoryId || null,
+    });
     if (error) setErr(error.message);
     setAmount('');
     setNote('');
@@ -97,27 +98,27 @@ export default function TransactionsPage() {
         <div>
           <label className="block text-sm">Date</label>
           <input type="date" className="border rounded px-2 py-1 w-full"
-            value={date} onChange={(e) => setDate(e.target.value)} />
+                 value={date} onChange={(e) => setDate(e.target.value)} />
         </div>
         <div>
           <label className="block text-sm">Category</label>
           <select className="border rounded px-2 py-1 w-full"
-            value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+                  value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
             <option value="">—</option>
-            {cats.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            {cats.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </div>
         <div>
           <label className="block text-sm">Amount</label>
           <input className="border rounded px-2 py-1 w-full"
-            value={amount} onChange={(e) => setAmount(e.target.value)}
-            placeholder="e.g. -12.34" />
+                 value={amount} onChange={(e) => setAmount(e.target.value)}
+                 placeholder="e.g. -12.34" />
         </div>
         <div>
           <label className="block text-sm">Note</label>
           <input className="border rounded px-2 py-1 w-full"
-            value={note} onChange={(e) => setNote(e.target.value)}
-            placeholder="optional" />
+                 value={note} onChange={(e) => setNote(e.target.value)}
+                 placeholder="optional" />
         </div>
         <button className="px-3 py-2 border rounded">Add</button>
       </form>
@@ -137,7 +138,7 @@ export default function TransactionsPage() {
             </tr>
           </thead>
           <tbody className="divide-y">
-            {txs.map((t) => (
+            {txs.map(t => (
               <tr key={t.id}>
                 <td className="py-2">{t.date}</td>
                 <td className="py-2">{t.category?.name ?? '—'}</td>
