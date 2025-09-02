@@ -6,3 +6,6 @@ node_modules
 # editor swaps
 *.swp
 *.swo
+
+# editor backups
+*.save
